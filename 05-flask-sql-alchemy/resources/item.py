@@ -23,8 +23,8 @@ class Item(MethodView):
     item = ItemModel.query.get(item_id)
 
     if item:
-      item.price = item_data("price")
-      item.name = item_data("name")
+      item.price = item_data["price"]
+      item.name = item_data["name"]
     else:
       item = ItemModel(id=item_id, **item_data)
 
@@ -41,7 +41,7 @@ class Item(MethodView):
 class ItemList(MethodView):
   @blp.response(200, ItemSchema(many=True))
   def get(self):
-    return items.values()
+    return ItemModel.query.all()
 
   @blp.arguments(ItemSchema)
   @blp.response(201, ItemSchema(many=True))
