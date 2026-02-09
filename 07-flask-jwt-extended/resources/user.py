@@ -37,7 +37,7 @@ class UserLogin(MethodView):
     dummy_hash = pbkdf2_sha256.hash("dummy")
 
     if user and pbkdf2_sha256.verify(user_data["password"], user.password):
-      access_token = create_access_token(identity=user.id)
+      access_token = create_access_token(identity=str(user.id))
       return {"access_token": access_token}
     
     if not user:
