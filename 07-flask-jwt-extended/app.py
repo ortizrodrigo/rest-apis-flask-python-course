@@ -39,6 +39,10 @@ def create_app(db_url=None):
   def revoked_token_callback(jwt_header, jwt_payload):
     return (jsonify({"message": "The token has been revoked.", "error": "token_revoked"}), 401)
 
+  @jwt.needs_fresh_token_loader
+  def token_not_fresh_callback(jwt_header, jwt_payload):
+    return (jsonify({"message": "The token is not fresh.", "error": "fresh_token_required"}), 401)
+
   @jwt.additional_claims_loader
   def add_claims_to_jwt(identity):
     # ~ Look in the database and check user admin
