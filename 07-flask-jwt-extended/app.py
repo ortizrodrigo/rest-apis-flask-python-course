@@ -30,6 +30,11 @@ def create_app(db_url=None):
   app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "dev-only-jwt-secret-not-for-production")
   jwt = JWTManager(app)
 
+  @jwt.additional_claims_loader
+  def add_claims_to_jwt(identity):
+    # ~ Look in the database and check user admin
+    return {"is_admin": identity == "1"}
+
   @jwt.expired_token_loader
   def expired_token_callback(jwt_header, jwt_payload):
     return (jsonify({"message": "The token has expired.", "error": "token_expired"}), 401)
