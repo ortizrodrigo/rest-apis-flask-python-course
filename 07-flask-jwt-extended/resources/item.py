@@ -10,7 +10,7 @@ from schemas import ItemSchema, ItemUpdateSchema
 
 blp = Blueprint("items", __name__, description="Operations on items")
 
-@blp.route("/item/<string:item_id>")
+@blp.route("/item/<int:item_id>")
 class Item(MethodView):
   @blp.response(200, ItemSchema)
   def get(self, item_id):
@@ -28,15 +28,23 @@ class Item(MethodView):
     else:
       item = ItemModel(id=item_id, **item_data)
 
-    db.session.add(item)
-    db.session.commit()
+    try:
+      db.session.add(item)
+      db.session.commit()
+    except SQLAlchemyError:
+      db.session.rollback()
+      abort(500, message="An error occurred while saving the item.")
 
     return item
 
   def delete(self, item_id):
     item = ItemModel.query.get_or_404(item_id)
-    db.session.delete(item)
-    db.session.commit()
+    try:
+      db.session.delete(item)
+      db.session.commit()
+    except SQLAlchemyError:
+      db.session.rollback()
+      abort(500, message="An error occurred while deleting the item.")
     return {"message": "Item deleted."}
 
 @blp.route("/item")
@@ -54,6 +62,7 @@ class ItemList(MethodView):
       db.session.add(item)
       db.session.commit()
     except SQLAlchemyError:
+      db.session.rollback()
       abort(500, message="An error occurred while inserting the item.")
     
     return item

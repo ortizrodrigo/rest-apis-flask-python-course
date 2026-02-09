@@ -8,7 +8,7 @@ from schemas import TagSchema, TagAndItemSchema
 
 blp = Blueprint("Tags", "tags", description="Operations on tags")
 
-@blp.route("/store/<string:store_id>/tag")
+@blp.route("/store/<int:store_id>/tag")
 class TagsInStore(MethodView):
   @blp.response(200, TagSchema(many=True))
   def get(self, store_id):
@@ -24,11 +24,12 @@ class TagsInStore(MethodView):
       db.session.add(tag)
       db.session.commit()
     except SQLAlchemyError as e:
+      db.session.rollback()
       abort(500, message=str(e))
 
     return tag
     
-@blp.route("/item/<string:item_id>/tag/<string:tag_id>")
+@blp.route("/item/<int:item_id>/tag/<int:tag_id>")
 class LinkTagsToItem(MethodView):
   @blp.response(201, TagSchema)
   def post(self, item_id, tag_id):
@@ -41,6 +42,7 @@ class LinkTagsToItem(MethodView):
       db.session.add(item)
       db.session.commit()
     except SQLAlchemyError:
+      db.session.rollback()
       abort(500, message="An error occurred while inserting the tag.")
     
     return tag
@@ -56,11 +58,12 @@ class LinkTagsToItem(MethodView):
       db.session.add(item)
       db.session.commit()
     except SQLAlchemyError:
+      db.session.rollback()
       abort(500, message="An error occurred while removing the tag.")
     
     return {"message": "Item removed from tag", "item": item, "tag": tag}
 
-@blp.route("/tag/<string:tag_id>")
+@blp.route("/tag/<int:tag_id>")
 class Tag(MethodView):
   @blp.response(200, TagSchema)
   def get(self, tag_id):
@@ -78,8 +81,12 @@ class Tag(MethodView):
     tag = TagModel.query.get_or_404(tag_id)
 
     if not tag.items:
-      db.session.delete(tag)
-      db.session.commit()
+      try:
+        db.session.delete(tag)
+        db.session.commit()
+      except SQLAlchemyError:
+        db.session.rollback()
+        abort(500, message="An error occurred while deleting the tag.")
       return {"message": "Tag deleted."}
 
     abort(400, message="Could not delete tag. Make sure tag is not associated with any items, then try again.")

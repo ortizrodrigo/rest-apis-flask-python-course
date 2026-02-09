@@ -10,7 +10,7 @@ from schemas import StoreSchema
 
 blp = Blueprint("stores", __name__, description="Operations on stores")
 
-@blp.route("/store/<string:store_id>")
+@blp.route("/store/<int:store_id>")
 class Store(MethodView):
   @blp.response(200, StoreSchema)
   def get(self, store_id):
@@ -19,8 +19,12 @@ class Store(MethodView):
 
   def delete(self, store_id):
     store = StoreModel.query.get_or_404(store_id)
-    db.session.delete(store)
-    db.session.commit()
+    try:
+      db.session.delete(store)
+      db.session.commit()
+    except SQLAlchemyError:
+      db.session.rollback()
+      abort(500, message="An error occurred deleting the store.")
     return {"message": "Store deleted."}
 
 @blp.route("/store")
@@ -38,8 +42,10 @@ class StoreList(MethodView):
       db.session.add(store)
       db.session.commit()
     except IntegrityError:
+      db.session.rollback()
       abort(400, message="A store with that name already exists.")
     except SQLAlchemyError:
+      db.session.rollback()
       abort(500, message="An error occurred creating the store.")
 
     return store
